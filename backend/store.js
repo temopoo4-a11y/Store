@@ -1,43 +1,38 @@
-const fs = require("fs");
-const path = require("path");
+const supabase = require("./db");
 
-const DATA_DIR = path.join(__dirname, "data");
-const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
-const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
-
-let productsCache = null;
-
-function readJson(file) {
-  try {
-    return JSON.parse(fs.readFileSync(file, "utf8"));
-  } catch {
-    return [];
-  }
+async function getProducts() {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from("products").select("*");
+  if (error) throw new Error(error.message);
+  return data || [];
 }
 
-function writeJson(file, data) {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
+async function getProductById(id) {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data || null;
 }
 
-function getProducts() {
-  if (!productsCache) {
-    productsCache = readJson(PRODUCTS_FILE);
-  }
-  return productsCache;
+async function getProductBySlug(slug) {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data || null;
 }
 
-function getProductById(id) {
-  return getProducts().find((p) => p.id === id) || null;
-}
-
-function getProductBySlug(slug) {
-  return getProducts().find((p) => p.slug === slug) || null;
-}
-
-function getCategories() {
+async function getCategories() {
+  const products = await getProducts();
   const seen = new Map();
-  for (const p of getProducts()) {
+  for (const p of products) {
     if (!seen.has(p.category)) {
       seen.set(p.category, { name: p.category, slug: p.category });
     }
@@ -45,19 +40,32 @@ function getCategories() {
   return [...seen.values()];
 }
 
-function getOrders() {
-  return readJson(ORDERS_FILE);
+async function getOrders() {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .order("createdAt", { ascending: false });
+  if (error) throw new Error(error.message);
+  return data || [];
 }
 
-function saveOrder(order) {
-  const orders = getOrders();
-  orders.push(order);
-  writeJson(ORDERS_FILE, orders);
+async function saveOrder(order) {
+  if (!supabase) throw new Error("Database not configured");
+  const { error } = await supabase.from("orders").insert(order);
+  if (error) throw new Error(error.message);
   return order;
 }
 
-function nextProductId() {
-  return getProducts().reduce((max, p) => Math.max(max, p.id), 0) + 1;
+async function nextProductId() {
+  if (!supabase) return 1;
+  const { data, error } = await supabase
+    .from("products")
+    .select("id")
+    .order("id", { ascending: false })
+    .limit(1);
+  if (error) throw new Error(error.message);
+  return (data && data.length ? Number(data[0].id) : 0) + 1;
 }
 
 function slugify(text) {
@@ -68,10 +76,10 @@ function slugify(text) {
     .replace(/^-+|-+$/g, "");
 }
 
-function createProduct(data) {
-  const products = getProducts();
+async function createProduct(data) {
+  if (!supabase) throw new Error("Database not configured");
   const product = {
-    id: nextProductId(),
+    id: await nextProductId(),
     name: data.name,
     slug: slugify(data.slug || data.name),
     description: data.description || "",
@@ -81,19 +89,20 @@ function createProduct(data) {
     stock: Math.max(0, Math.floor(Number(data.stock) || 0)),
     createdAt: new Date().toISOString(),
   };
-  products.push(product);
-  writeJson(PRODUCTS_FILE, products);
-  productsCache = products;
-  return product;
+  const { data: inserted, error } = await supabase
+    .from("products")
+    .insert(product)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return inserted;
 }
 
-function updateProduct(id, data) {
-  const products = getProducts();
-  const index = products.findIndex((p) => p.id === id);
-  if (index === -1) return null;
-  const existing = products[index];
+async function updateProduct(id, data) {
+  if (!supabase) throw new Error("Database not configured");
+  const existing = await getProductById(id);
+  if (!existing) return null;
   const updated = {
-    ...existing,
     name: data.name !== undefined ? data.name : existing.name,
     slug:
       data.slug !== undefined
@@ -101,35 +110,53 @@ function updateProduct(id, data) {
         : data.name !== undefined
           ? slugify(data.name)
           : existing.slug,
-    description: data.description !== undefined ? data.description : existing.description,
+    description:
+      data.description !== undefined ? data.description : existing.description,
     price:
-      data.price !== undefined ? Math.round(Number(data.price) * 100) / 100 : existing.price,
+      data.price !== undefined
+        ? Math.round(Number(data.price) * 100) / 100
+        : existing.price,
     imageUrl: data.imageUrl !== undefined ? data.imageUrl : existing.imageUrl,
     category: data.category !== undefined ? data.category : existing.category,
-    stock: data.stock !== undefined ? Math.max(0, Math.floor(Number(data.stock) || 0)) : existing.stock,
+    stock:
+      data.stock !== undefined
+        ? Math.max(0, Math.floor(Number(data.stock) || 0))
+        : existing.stock,
   };
-  products[index] = updated;
-  writeJson(PRODUCTS_FILE, products);
-  productsCache = products;
-  return updated;
+  const { data: updatedRow, error } = await supabase
+    .from("products")
+    .update(updated)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return updatedRow;
 }
 
-function deleteProduct(id) {
-  const products = getProducts();
-  const next = products.filter((p) => p.id !== id);
-  if (next.length === products.length) return false;
-  writeJson(PRODUCTS_FILE, next);
-  productsCache = next;
-  return true;
+async function deleteProduct(id) {
+  if (!supabase) throw new Error("Database not configured");
+  const { data, error } = await supabase
+    .from("products")
+    .delete()
+    .eq("id", id)
+    .select("id");
+  if (error) throw new Error(error.message);
+  return data && data.length > 0;
 }
 
-function updateOrderStatus(id, status) {
-  const orders = getOrders();
-  const index = orders.findIndex((o) => o.id === id);
-  if (index === -1) return null;
-  orders[index] = { ...orders[index], status };
-  writeJson(ORDERS_FILE, orders);
-  return orders[index];
+async function updateOrderStatus(id, status) {
+  if (!supabase) throw new Error("Database not configured");
+  const { data, error } = await supabase
+    .from("orders")
+    .update({ status })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    throw new Error(error.message);
+  }
+  return data;
 }
 
 module.exports = {
