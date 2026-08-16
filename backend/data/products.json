@@ -1,0 +1,68 @@
+[
+  {
+    "id": 1,
+    "name": "Classic Ceramic Mug",
+    "slug": "classic-ceramic-mug",
+    "description": "A sturdy 12oz ceramic mug, perfect for morning coffee or tea. Dishwasher and microwave safe.",
+    "price": 14.99,
+    "imageUrl": "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=400",
+    "category": "kitchen",
+    "stock": 42,
+    "createdAt": "2026-01-10T09:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "name": "Bamboo Cutting Board",
+    "slug": "bamboo-cutting-board",
+    "description": "Eco-friendly bamboo board, gentle on knives and naturally antibacterial. Includes a juice groove.",
+    "price": 24.5,
+    "imageUrl": "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400",
+    "category": "kitchen",
+    "stock": 18,
+    "createdAt": "2026-01-11T09:00:00.000Z"
+  },
+  {
+    "id": 3,
+    "name": "Linen Throw Pillow",
+    "slug": "linen-throw-pillow",
+    "description": "Soft washed-linen pillow with a hidden zipper. 18x18 inches, cover and insert included.",
+    "price": 32,
+    "imageUrl": "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=400",
+    "category": "home",
+    "stock": 25,
+    "createdAt": "2026-01-12T09:00:00.000Z"
+  },
+  {
+    "id": 4,
+    "name": "Scented Soy Candle",
+    "slug": "scented-soy-candle",
+    "description": "Hand-poured soy candle with notes of cedar and amber. Approximately 40 hours of burn time.",
+    "price": 19.99,
+    "imageUrl": "https://images.unsplash.com/photo-1603006905003-be475563bc59?w=400",
+    "category": "home",
+    "stock": 60,
+    "createdAt": "2026-01-13T09:00:00.000Z"
+  },
+  {
+    "id": 5,
+    "name": "Canvas Tote Bag",
+    "slug": "canvas-tote-bag",
+    "description": "Heavyweight organic cotton tote. Reinforced handles, fits a 15-inch laptop with room to spare.",
+    "price": 18,
+    "imageUrl": "https://images.unsplash.com/photo-1594223274512-ad4803739b7c?w=400",
+    "category": "accessories",
+    "stock": 80,
+    "createdAt": "2026-01-14T09:00:00.000Z"
+  },
+  {
+    "id": 6,
+    "name": "Stainless Steel Water Bottle",
+    "slug": "stainless-steel-water-bottle",
+    "description": "Double-wall insulated bottle keeps drinks cold 24h, hot 12h. Leak-proof lid, 750ml capacity.",
+    "price": 28.99,
+    "imageUrl": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400",
+    "category": "accessories",
+    "stock": 33,
+    "createdAt": "2026-01-15T09:00:00.000Z"
+  }
+]
